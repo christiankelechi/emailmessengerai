@@ -1,0 +1,117 @@
+1. Write a programme to get the prompt input
+2. Let it get the input and generate multiple unique ways but meaning ways of asking the question
+3. Prepare a strong datasets
+4. Provide sample template email message to enable it intuitively generate from it
+5. After generating the messages for email sending let it store it each in a separate .csv files
+6. Read from the list of generated csv files and create a new folder to a new generated .csv from the initial 1000 files and swap all vowels a to j, i to z, e to w,u to p, from o swapped to c
+
+
+From your request, it seems like you're asking for a quite complex multi-part program. I'll break it down and provide code samples for each section of your request. I'll use Python as the language for these examples.
+
+Getting prompt input:
+python
+Copy code
+prompt = input("Please enter your prompt: ")
+Generating multiple ways of asking the same question is quite complex and would require a deep learning model like GPT-4 to do effectively. Here's a simple version that rearranges the words:
+python
+Copy code
+import random
+
+def generate_questions(prompt):
+    words = prompt.split()
+    questions = []
+    for _ in range(5): # generating 5 versions
+        random.shuffle(words)
+        questions.append(" ".join(words) + "?")
+    return questions
+Preparing a strong dataset:
+A strong dataset depends on the problem domain. If you're asking about the chatbot, we would need a dataset of conversations. You could use the Cornell Movie Dialogs Corpus or another dialog corpus. This is a large subject beyond the scope of a simple Python script.
+
+Sample template email message:
+python
+Copy code
+def generate_email_message(template, name, date):
+    return template.format(name=name, date=date)
+
+template = "Dear {name},\n\nWe are writing to remind you about the meeting scheduled on {date}.\n\nBest,\nCompany"
+
+print(generate_email_message(template, "John Doe", "2023-05-30"))
+Generating messages and storing them in CSV files:
+python
+Copy code
+import csv
+import os
+
+def write_to_csv(filename, data):
+    with open(filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(data)
+
+messages = [generate_email_message(template, "John Doe", "2023-05-30") for _ in range(1000)]
+for i in range(len(messages)):
+    write_to_csv(f'message_{i}.csv', [messages[i]])
+Reading CSV files, creating new CSVs with swapped vowels, and storing them in a new folder:
+python
+Copy code
+import shutil
+
+def swap_vowels(text):
+    swap_dict = {'a':'j', 'i':'z', 'e':'w', 'u':'p', 'o':'c'}
+    return ''.join([swap_dict.get(c, c) for c in text])
+
+os.makedirs('new_folder', exist_ok=True)
+
+for i in range(1000):
+    with open(f'message_{i}.csv', 'r') as file:
+        reader = csv.reader(file)
+        message = next(reader)[0]
+    new_message = swap_vowels(message)
+    with open(f'new_folder/message_{i}.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([new_message])
+This should give you an idea of how to implement the functionality you described. However, you'd need to flesh out many of these functions to fit your specific needs, particularly with regards to generating unique questions and preparing a strong dataset.
+
+
+
+
+
+User
+Prepare a strong dataset for email world wide unique human intuitive generation in python
+
+Building a dataset for training an email generation model can be a complex task, and requires significant considerations around data privacy and ethical guidelines, as many email datasets are private or contain sensitive information. Please ensure you have the necessary permissions and anonymization processes in place to handle any data you might use.
+
+A public source you could use to help build a dataset is the Enron Email Dataset. This dataset consists of email data from about 150 users, mostly senior management of Enron. You can download the dataset from here.
+
+Here is a basic example of how you can load and preprocess the Enron dataset:
+
+python
+Copy code
+import os
+import email
+import pandas as pd
+
+def load_enron_data(path):
+    emails = []
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if file.endswith('.'):
+                with open(os.path.join(root, file), 'r', encoding='latin1') as f:
+                    raw_email = f.read()
+                email_message = email.message_from_string(raw_email)
+                
+                # Get the plain text version of email
+                for part in email_message.walk():
+                    if part.get_content_type() == 'text/plain':
+                        text = part.get_payload()
+                        emails.append(text)
+    return emails
+
+enron_path = '/path/to/enron/data'
+emails = load_enron_data(enron_path)
+
+# Save as a CSV for later use
+df = pd.DataFrame(emails, columns=['email'])
+df.to_csv('enron_emails.csv', index=False)
+Please replace '/path/to/enron/data' with your actual path where you stored Enron data. This script walks through the directory structure, opens each email, and extracts the plain text part of the message.
+
+Note that this is a very basic example. The Enron dataset is complex and messy, and includes many non-email files and a wide range of email formats. You may need to perform additional pre-processing steps to clean up the dataset and make it suitable for training a model.

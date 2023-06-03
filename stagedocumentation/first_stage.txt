@@ -1,0 +1,5 @@
+1. Write a programme to get the input
+2. Let it get the input and generate multiple unique ways but meaning ways of asking the question
+4. Provide sample template email message to enable it intuitively generate from it
+5. After generating the messages for email sending let it store it each in a separate .csv files
+6. Read from the list of generated csv files and create a new folder to a new generated .csv from the initial 1000 files and swap all vowels a to j, i to z, e to w,u to p, from o swapped to c
