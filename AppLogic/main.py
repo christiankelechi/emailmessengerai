@@ -1,63 +1,64 @@
 import os
 import csv
 import time
-import asyncio
-import aiohttp
-from aiohttp import ClientSession
-
+import openai
+import string
 
 class EmailGenerator:
     def __init__(self):
-        self.api_key = os.environ.get("API_KEY")
-        self.org_id = os.environ.get("ORG_ID")
-        self.base_url = "https://api.openai.com/v1/engines/davinci-codex/completions"
-        self.headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-        self.prompt = "generate nice soda marketing email newsletters"
-        self.total_emails = 1000
-        self.timeout = aiohttp.ClientTimeout(total=600)
-        self.current_email_count = 0
+        self.init_api()
+        self.translate_table = str.maketrans('aeiou', 'pzwbz')
 
-    async def get_assistant_response(self, session, prompt):
-        data = {
-            "prompt": prompt,
-            "max_tokens": 1000,
-        }
-        try:
-            async with session.post(self.base_url, headers=self.headers, json=data, timeout=self.timeout) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    email = data['choices'][0]['text']
-                    await self.save_to_csv(email)
-                else:
-                    print("Failed to get response, status code:", resp.status)
-        except Exception as e:
-            print(f"An error occurred: {e}")
+    def init_api(self):
+        with open(".env") as env:
+            for line in env:
+                key, value = line.strip().split("=")
+                os.environ[key] = value
 
-    async def save_to_csv(self, email):
-        self.current_email_count += 1
-        filename = f"message_{self.current_email_count}.csv"
-        with open(filename, "w", encoding="UTF-8") as f:
+        openai.api_key = os.environ.get("API_KEY")
+        openai.organization_id = os.environ.get("ORG_ID")
+
+    def generate_email(self, prompt):
+        response = openai.Completion.create(
+            engine="text-davinci-002",
+            prompt=prompt,
+            temperature=1.5,
+            max_tokens=300
+        )
+        return response.choices[0].text.strip()
+
+    def vowel_swapper(self, text):
+        return text.translate(self.translate_table)
+
+class EmailManager:
+    def __init__(self, generator):
+        self.generator = generator
+
+    def generate_emails(self, number: int, prompt: str):
+        for i in range(number):
+            self.generate_and_save_email(i+1, prompt)
+        
+    def generate_and_save_email(self, index, prompt):
+        email = self.generator.generate_email(prompt)
+        self.save_to_csv(email, index, 'emails')
+        print(f'Generated {index} emails so far')
+        
+        swapped_email = self.generator.vowel_swapper(email)
+        self.save_to_csv(swapped_email, index, 'swappedfolder')
+        print(f'Swapped vowels in {index} emails so far')
+
+    def save_to_csv(self, email, index, folder):
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        with open(f"{folder}/email_{index}.csv","w",encoding='UTF-8') as f:
             writer = csv.writer(f, delimiter=",", lineterminator="\n")
             writer.writerow([email])
 
-    async def generate_emails(self):
-        tasks = []
-        async with ClientSession() as session:
-            for i in range(self.total_emails):
-                tasks.append(self.get_assistant_response(session, self.prompt))
-                await asyncio.sleep(0.04)  # respect rate limit
-            await asyncio.gather(*tasks)
+start = time.time()
 
-    async def run(self):
-        start = time.time()
-        await self.generate_emails()
-        end = time.time()
-        print(str((end - start)/60) + "mins")
+generator = EmailGenerator()
+manager = EmailManager(generator)
+manager.generate_emails(1000, 'generate a soda marketing email')
 
-
-if __name__ == '__main__':
-    generator = EmailGenerator()
-    asyncio.run(generator.run())
+end = time.time()
+print(f'Total time: {(end - start)/60} minutes')

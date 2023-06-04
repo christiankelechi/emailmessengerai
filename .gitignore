@@ -1,3 +1,6 @@
 .env
 venv
 AppLogic/.env
+AppLogic/emails
+AppLogic/swappedfolder
+.env
